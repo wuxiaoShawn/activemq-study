@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+    <!--    通过brokerservice方式启动内嵌broker-->
+    <!--
+    <bean id="broker" class="org.apache.activemq.broker.BrokerService" init-method="start" destroy-method="stop">
+        <property name="brokerName" value="myBroker"/>
+        <property name="persistent" value="true"/>
+        <property name="transportConnectorURIs">
+            <list>
+                <value>tcp://localhost:61616</value>
+            </list>
+        </property>
+    </bean>
+    -->
+    <!--    自动扫包-->
+    <context:component-scan base-package="com.shawnNicole">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+<!--    <aop:aspectj-autoproxy proxy-target-class="true"/>-->
+    <!--    事务-->
+    <!--<tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="true"/>
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>-->
+    <!--    数据源-->
+    <!--<bean name="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName">
+            <value>com.mysql.jdbc.Driver</value>
+        </property>
+        <property name="url">
+            <value>jdbc:mysql://47.102.128.135:3306?useUnicode=true</value>
+        </property>
+    </bean>-->
+    <bean name="mysql-ds" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+        <property name="driverClassName">
+            <value>
+                org.gjt.mm.mysql.Driver
+            </value>
+        </property>
+        <property name="url">
+            <value>
+                jdbc:mysql://localhost:3306/test/useUnicode=true&amp;characterEncoding=UTF-8
+            </value>
+        </property>
+        <property name="username">
+            <value>
+                root
+            </value>
+        </property>
+        <property name="password">
+            <value>
+                "MyNewPass1!"
+            </value>
+        </property>
+    </bean>
+    <!--    Spring配置Jms开发-->
+    <bean id="jmsFactory" class="org.apache.activemq.pool.PooledConnectionFactory" destroy-method="stop">
+        <property name="connectionFactory">
+            <bean class="org.apache.activemq.ActiveMQConnectionFactory">
+                <property name="brokerURL">
+                    <value>tcp://120.27.239.94:61616</value>
+                </property>
+            </bean>
+        </property>
+        <property name="maxConnections" value="100"></property>
+    </bean>
+    <bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory" ref="jmsFactory"/>
+        <property name="defaultDestination" ref="destinationTopic"/>
+        <property name="messageConverter">
+            <bean class="org.springframework.jms.support.converter.SimpleMessageConverter"/>
+        </property>
+    </bean>
+    <bean id="destination" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg index="0" value="spring-queue"/>
+    </bean>
+    <bean id="destinationTopic" class="org.apache.activemq.command.ActiveMQTopic">
+        <constructor-arg index="0" value="spring-topic"/>
+    </bean>
+<!--    在spring中配置消费者，这样不需要在启动客户端-->
+    <bean id="jmsContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+        <property name="connectionFactory" ref="jmsFactory"/>
+        <property name="destination" ref="destinationTopic"/>
+        <property name="messageListener" ref="messageListener"/>
+    </bean>
+<!--    配置监听器，监听JMS消息-->
+    <bean id="messageListener" class="com.shawnNicole.jmstest.spring.MyMessageListener">
+    </bean>
+    <!--    通过brokerFactory方式启动内嵌broker-->
+    <!--    <bean id="brokerFactory" class="org.apache.activemq.xbean.BrokerFactoryBean">-->
+    <!--        <property name="config" value="activemq-simple.xml"/>-->
+    <!--        <property name="start" value="true"/>-->
+    <!--    </bean>-->
+</beans>
